@@ -1,4 +1,6 @@
 ################ Data #####################
+
+# DATA set: its dir and filename.
 DATA = {
   "is": ("isolet", "isolet"),
   "sh": ("smart_home", "smart_home_split"),
@@ -10,8 +12,8 @@ DATA = {
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["mn"][0],
-  "dataset"       : DATA["mn"][1],   # directory and dataset
+  "directory"     : DATA["vt"][0],
+  "dataset"       : DATA["vt"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors

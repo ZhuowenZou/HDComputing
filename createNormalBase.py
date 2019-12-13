@@ -57,7 +57,7 @@ def createSparse(feat,dim,mu,sigma, s):
   #for i in range(int(D/2),D):
 	#  base[i] = -1
   for i in range(feat):
-	  #bases.append(np.random.permutation(base));
+    #bases.append(np.random.permutation(base));
     sparse = np.random.normal(mu, sigma, D)
     sparse.resize((dim,))
     # arithmetic shift right by 1
@@ -69,4 +69,4 @@ def createSparse(feat,dim,mu,sigma, s):
   print('total time: ' + str(end - start))
 
 if __name__ == "__main__":
-	main()
+    main()

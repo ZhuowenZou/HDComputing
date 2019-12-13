@@ -13,21 +13,12 @@ class Genetator(Enum):
 
 # Generate one random vector of desired length and generation type
 def generate_vector(vector_length, vector_type, param):
-    def create(feat, dim, mu, sigma):
-        D = int(dim)
-        feat = int(feat)
-        bases = list()  # your ID vectors for encoding
-        base = np.zeros(D)  # the base +1/-1 hypervector
-
-        # for i in range(int(D/2)):
-        #  base[i] = 1
-        # for i in range(int(D/2),D):
-        #  base[i] = -1
-
-        for i in range(D):
-            # bases.append(np.random.permutation(base));
-            bases.append(np.random.normal(mu, sigma, feat))
-
+    if vector_type == "Gaussian":
+        mu = param["mu"]
+        sigma = param["sigma"]
+        return np.random.normal(mu, sigma, vector_length)
+    else:
+        raise Exception("Vector type %s not recognized. Abort.\n" % vector_type)
 
 class HD_basis:
 

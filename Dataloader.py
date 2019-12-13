@@ -14,18 +14,21 @@ class Dataloader:
     # load in data and populate dataloader
     def __init__(self, dir=config["directory"], dataset=config["dataset"], data_loc=config["data_location"]):
 
+        sys.stderr.write("Loading dataset " + dataset + " from " + dir + "\n")
         data_path = data_loc + dir + "/" + dataset
 
-        sys.stderr.write("Loading train data...\n")
+        sys.stderr.write("Loading train data... ")
         self.train_param = self.readChoirData(data_path, "train")
+        sys.stderr.write("train data of shape %s loaded\n" % str(self.train_param["data"].shape))
 
-        sys.stderr.write("Loading test data...\n")
+        sys.stderr.write("Loading test data...  ")
         self.test_param = self.readChoirData(data_path, "test")
+        sys.stderr.write("test  data of shape %s loaded\n" % str(self.test_param["data"].shape))
 
         self.nFeatures = self.train_param["nFeatures"]
         self.nClasses = self.train_param["nClasses"]
 
-        sys.stderr.write("Data Loaded. Num of features = "+str(self.nFeatures)+" Num of Classes = "+str(self.nClasses))
+        sys.stderr.write("Data Loaded. Num of features = %d Num of Classes = %d" % (self.nFeatures, self.nClasses))
 
     # read in data from file
     def readChoirData(self, data_path, data_type):
@@ -53,10 +56,11 @@ class Dataloader:
                 y.append(l)
 
     def getTrain(self):
-        return self.train_param["X"], self.train_param["y"]
+        return self.train_param["data"], self.train_param["labels"]
 
     def getTest(self):
-        return self.test_param["X"], self.test_param["y"]
+        return self.test_param["data"], self.test_param["labels"]
 
     def getParam(self):
-        return self.nFeatures, self.nClasses
+        return self.nFeatures, self.nClasses, self.train_param["data"], self.train_param["labels"], \
+               self.test_param["data"], self.test_param["labels"]
