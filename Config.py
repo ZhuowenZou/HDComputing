@@ -1,3 +1,10 @@
+from enum import Enum
+
+class Update_T(Enum):
+  FULL = 1
+  PARTIAL = 2
+  RPARTIAL = 3
+
 ################ Data #####################
 
 # DATA set: its dir and filename.
@@ -33,24 +40,6 @@ config = {
   # binary model
   "binaryModel" : 0,
 
-  ################### One-shot learning ###############
-  # the percentage of data to actually use (for automation)
-  "data_percentages" : [1.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5],
-  # default rate
-  "train_percent" : 1,
-
-  ################## Train / Test iterations ##########
-  # number of trials to run per experiment
-  "iter_per_trial" : 3,
-  # number of times to run per encoding
-  "iter_per_encoding" : 5,
-
-  ################## Dropout ##########################
-  # dropout rate during each period; 0 means no dropout (for automation)
-  "drop_percentages" : [0, 0.1, 0.2, 0.5],
-  # default rate
-  "dropout_rate" : 0.1,
-
   ################### Baklava #######################
   # Number of layers for the Baklava
   "nLayers" : 5,
@@ -67,5 +56,28 @@ config = {
   # Filter/kernel size for every layer (uniform filter); preferably, k | width and height of 2d features and k^2 | d.
   "k" : None,
   # Filter sizes for each layer (non-uniform filter); each preferably divides width and height and corresponding dArr[i]
-  "kArr" : None
+  "kArr" : None,
+
+  ################### One-shot learning ###############
+  # Master switch
+  "one_shot": 0,
+  # the percentage of data to actually use (for automation)
+  "data_percentages": [1.0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5],
+  # default rate
+  "train_percent": 1,
+
+  ################## Dropout ##########################
+  # Master switch
+  "dropout": 0,
+  # dropout rate during each period; 0 means no dropout (for automation)
+  "drop_percentages": [0, 0.1, 0.2, 0.5],
+  # default rate
+  "dropout_rate": 0,
+  "update_type": Update_T.FULL,
+
+  ################## Train / Test iterations ##########
+  # number of trials to run per experiment
+  "iter_per_trial": 3,
+  # number of times to run per encoding
+  "iter_per_encoding": 5,
 }
