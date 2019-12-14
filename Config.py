@@ -19,8 +19,8 @@ DATA = {
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["mn"][0],
-  "dataset"       : DATA["mn"][1],   # directory and dataset
+  "directory"     : DATA["uc"][0],
+  "dataset"       : DATA["uc"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors
@@ -66,6 +66,7 @@ config = {
   # default rate
   "train_percent": 1,
 
+
   ################## Dropout ##########################
   # Master switch
   "dropout": 0,
@@ -80,4 +81,6 @@ config = {
   "iter_per_trial": 3,
   # number of times to run per encoding
   "iter_per_encoding": 5,
+  # iterations per training (number of epochs)
+  "epochs": 300,
 }

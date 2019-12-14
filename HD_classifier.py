@@ -44,28 +44,31 @@ def kernel(x,y):
   #k = cosKernel
   return k(x,y)
 
-class HD_Classifier:
+class HD_classifier:
 
     # Required parameters for the training it supports; will enhance later
     options = ["one_shot", "dropout", "lr"]
     # required opts for dropout
     options_dropout = ["dropout_rate", "update_type"]
 
-    def __init__(self, basis, D, nClasses):
-        self.basis = basis
+    # id: id associated with the basis/encoded data
+    def __init__(self, D, nClasses, id):
         self.D = D
         self.nClasses = nClasses
         self.classes = np.zeros((nClasses, D))
         # If first fit, print out complete configuration
         self.first_fit = True
+        self.id = id
 
-    def resetModel(self, basis = None, D = None, nClasses = None, reset = True):
+    def resetModel(self, basis = None, D = None, nClasses = None, id = None, reset = True):
         if basis is not None:
             self.basis = basis
         if D is not None:
             self.D = D
         if nClasses is not None:
             self.nClasses = nClasses
+        if id is not None:
+            self.id = id
         if reset:
             self.resetClasses()
         self.first_fit = True
@@ -105,7 +108,7 @@ class HD_Classifier:
             if option not in param:
                 param[option] = config[option]
         if self.first_fit:
-            sys.stderr.write("Fitting with configuration: %s \n" % str(param[self.options]))
+            sys.stderr.write("Fitting with configuration: %s \n" % str([(k,param[k]) for k in self.options]))
 
         # Actual fitting
 
@@ -116,7 +119,6 @@ class HD_Classifier:
                 if option not in param:
                     param[option] = config[option]
             # Mask for dropout
-            mask = np.asarray([1 for i in range(self.D)])
             for i in np.random.choice(self.D, int(self.D * (param["drop_rate"])), replace=False):
                 mask[i] = 0
 
@@ -143,5 +145,28 @@ class HD_Classifier:
                 correct += 1
             count += 1
         self.first_fit = False
+        return correct / count
+
+    def test(self, data, label):
+
+        assert self.D == data.shape[1]
+
+        # fit
+        r = list(range(data.shape[0]))
+        random.shuffle(r)
+        correct = 0
+        count = 0
+        for i in r:
+            answer = label[i]
+            maxVal = -1
+            guess = -1
+            for m in range(self.nClasses):
+                val = kernel(self.classes[m], data[i])
+                if val > maxVal:
+                    maxVal = val
+                    guess = m
+            if guess == answer:
+                correct += 1
+            count += 1
         return correct / count
 

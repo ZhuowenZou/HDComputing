@@ -41,11 +41,11 @@ class HD_basis:
 
     # required parameters for generator types from the dataset (not Config)
     param_req = {
-        Generator.Vanilla: ["nFeatures"],
-        Generator.Baklava: ["nFeatures"]
+        Generator.Vanilla: [],
+        Generator.Baklava: []
     }
     # general parameters from Config
-    param_config = ["nFeatures", "D", "sparse", "s", "vector", "mu", "sigma", "binarize"]
+    param_config = ["nFeatures", "nClasses", "D", "sparse", "s", "vector", "mu", "sigma", "binarize"]
 
     # gen_type: type of random vector generator
     # param: dictionary containing parameter of the generator

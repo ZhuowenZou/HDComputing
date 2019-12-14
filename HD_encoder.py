@@ -20,16 +20,16 @@ def encodeDatum(datum, basis, noises):
     return encoded
 
 # dump basis and its param into a file, return the name of file
-def saveEncoded(encoded, id = "", data_type = "unknown"):
+def saveEncoded(encoded, labels, id = "", data_type = "unknown"):
     filename = "encoded_%s_%s.pkl" % (id, data_type)
     sys.stderr.write("Dumping data into %s \n"%filename)
-    joblib.dump(encoded, open(filename, "wb"), compress=True)
+    joblib.dump((encoded, labels), open(filename, "wb"), compress=True)
     return filename
 
 # Load basis from a file
 def loadEncoded(filename):
-    encoded= joblib.load(filename)
-    return encoded
+    encoded, labels = joblib.load(filename)
+    return encoded, labels
 
 # encode data using the given basis
 # noise: default Gaussian noise
