@@ -1,6 +1,7 @@
 import sys
 import struct
 import numpy as np
+import sklearn
 from Config import config
 
 # Dataloader: load data from designated location. Default location is Config
@@ -46,8 +47,10 @@ class Dataloader:
                 for i in range(nFeatures):
                     v_in_bytes = f.read(4)
                     if v_in_bytes is None or len(v_in_bytes) == 0:
+                        # TODO very unprofessionally normalizing data
+                        X = sklearn.preprocessing.normalize(np.asarray(X), norm='l2')
                         param["nFeatures"], param["nClasses"], param["data"], param["labels"] = \
-                            nFeatures, nClasses, np.asarray(X), np.asarray(y)
+                            nFeatures, nClasses, X, np.asarray(y)
                         return param
                     v = struct.unpack('f', v_in_bytes)[0]
                     newDP.append(v)

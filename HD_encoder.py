@@ -9,16 +9,6 @@ from enum import Enum
 
 from tqdm import tqdm_notebook
 
-#encode one vector/sample into a HD vector
-def encodeDatum(datum, basis, noises):
-    size = basis.shape[0]
-    assert size == noises.shape[0]
-    data = datum
-    encoded = np.empty(size)
-    for i in range(size):
-        encoded[i] = np.cos(np.dot(datum, basis[i]) + noises[i]) * np.sin(np.dot(datum, basis[i]))
-    return encoded
-
 # dump basis and its param into a file, return the name of file
 def saveEncoded(encoded, labels, id = "", data_type = "unknown"):
     filename = "encoded_%s_%s.pkl" % (id, data_type)
@@ -31,22 +21,35 @@ def loadEncoded(filename):
     encoded, labels = joblib.load(filename)
     return encoded, labels
 
-# encode data using the given basis
-# noise: default Gaussian noise
-def encodeData(data, basis, noise = True):
-    start = time.time()
-    sys.stderr.write("Encoding data of shape %s\n"%str(data.shape))
-    assert data.shape[1] == basis.shape[1]
-    noises = []
-    encoded = []
-    if noise:
-        noises = np.random.uniform(0, 2 * math.pi, basis.shape[0])
-    else:
-        noises = np.zeros(basis.shape[0])
-    for i in tqdm_notebook(range(len(data)), desc='samples encoded'):
-        encoded.append(encodeDatum(data[i], basis, noises))
-    end = time.time()
-    sys.stderr.write("Time spent: %d sec\n" % int(end - start))
-    return np.asarray(encoded)
+class HD_encoder:
+    def __init__(self, basis, noise=True):
+        self.basis = basis
+        self.D = basis.shape[0]
+        self.noises = []
+        if noise:
+            self.noises = np.random.uniform(0, 2 * math.pi, self.D)
+        else:
+            self.noises = np.zeros(self.D)
+
+    #encode one vector/sample into a HD vector
+    def encodeDatum(self, datum):
+        encoded = np.empty(self.D)
+        for i in range(self.D):
+            encoded[i] = np.cos(np.dot(datum, self.basis[i]) + self.noises[i]) * np.sin(np.dot(datum, self.basis[i]))
+        return encoded
+
+    # encode data using the given basis
+    # noise: default Gaussian noise
+    def encodeData(self, data):
+        start = time.time()
+        sys.stderr.write("Encoding data of shape %s\n"%str(data.shape))
+        assert data.shape[1] == self.basis.shape[1]
+        noises = []
+        encoded = []
+        for i in tqdm_notebook(range(len(data)), desc='samples encoded'):
+            encoded.append(self.encodeDatum(data[i]))
+        end = time.time()
+        sys.stderr.write("Time spent: %d sec\n" % int(end - start))
+        return np.asarray(encoded)
 
 

@@ -19,8 +19,8 @@ DATA = {
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["uc"][0],
-  "dataset"       : DATA["uc"][1],   # directory and dataset
+  "directory"     : DATA["mn"][0],
+  "dataset"       : DATA["mn"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors
