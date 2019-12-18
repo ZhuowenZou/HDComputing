@@ -108,6 +108,7 @@ venv.bak/
 
 # Project Specific
 *.pkl
+*.pickle
 
 # ide
 .idea/

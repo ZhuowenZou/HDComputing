@@ -41,21 +41,22 @@ config = {
   "binaryModel" : 0,
 
   ################### Baklava #######################
+  "width": None,
+  "height": None,
   # Number of layers for the Baklava
-  "nLayers" : 5,
+  "nLayers" : 1,
   # Whether the dimensions for the layers are uniform
   "uniform_dim" : 1,
   # Whether the filter/kernel sizes for the layers are uniform
   "uniform_ker" : 1,
 
-  # Dimension for every layer (uniform layer); preferably divides D
-  "d" : None,
   # Dimensions for each layers (non-uniform layer); preferably sums up to D
+  # If uniform_dim = 1, then d = D // nLayers
   "dArr" : None,
 
-  # Filter/kernel size for every layer (uniform filter); preferably, k | width and height of 2d features and k^2 | d.
-  "k" : None,
-  # Filter sizes for each layer (non-uniform filter); each preferably divides width and height and corresponding dArr[i]
+  # Filter/kernel size for every layer (uniform filter); preferably, k | width-1 and height-1 of 2d features.
+  "k" : 3,
+  # Filter sizes for each layer (non-uniform filter); each preferably divides width-1 and height-1
   "kArr" : None,
 
   ################### One-shot learning ###############

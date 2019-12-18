@@ -1,0 +1,4 @@
+id 
+498- the first ConvHD - Layer = 5 ker = 3
+2775 - second - Layer = 1 ker = 3
+5351- the original tests layer = 1 ker = 1
