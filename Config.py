@@ -4,6 +4,12 @@ class Update_T(Enum):
   FULL = 1
   PARTIAL = 2
   RPARTIAL = 3
+  HALF = 4
+
+# enum for random vector generator type
+class Generator(Enum):
+  Vanilla = 1
+  Baklava = 2
 
 ################ Data #####################
 
@@ -44,7 +50,7 @@ config = {
   "width": None,
   "height": None,
   # Number of layers for the Baklava
-  "nLayers" : 1,
+  "nLayers" : 5,
   # Whether the dimensions for the layers are uniform
   "uniform_dim" : 1,
   # Whether the filter/kernel sizes for the layers are uniform
@@ -55,7 +61,7 @@ config = {
   "dArr" : None,
 
   # Filter/kernel size for every layer (uniform filter); preferably, k | width-1 and height-1 of 2d features.
-  "k" : 3,
+  "k" : 5,
   # Filter sizes for each layer (non-uniform filter); each preferably divides width-1 and height-1
   "kArr" : None,
 
@@ -83,5 +89,5 @@ config = {
   # number of times to run per encoding
   "iter_per_encoding": 5,
   # iterations per training (number of epochs)
-  "epochs": 300,
+  "epochs": 50,
 }

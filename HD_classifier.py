@@ -1,18 +1,9 @@
 import Config
 import sys
-import time
-import math
 import random
 import numpy as np
-from Config import config
-import joblib
-from enum import Enum
+from Config import config, Update_T
 
-class Update_T(Enum):
-  FULL = 1
-  PARTIAL = 2
-  RPARTIAL = 3
-  HALF = 4
 
 def sgn(i):
   if i > 0:
@@ -146,7 +137,25 @@ class HD_classifier:
             count += 1
         self.first_fit = False
         return correct / count
+    def predict(self, data):
 
+        assert self.D == data.shape[1]
+
+        prediction = []
+
+        # fit
+        for i in range(len(data.shape[0])):
+            maxVal = -1
+            guess = -1
+            for m in range(self.nClasses):
+                val = kernel(self.classes[m], data[i])
+                if val > maxVal:
+                    maxVal = val
+                    guess = m
+            prediction.append(guess)
+        return prediction
+
+    # TODO: reduce this to using predict??
     def test(self, data, label):
 
         assert self.D == data.shape[1]

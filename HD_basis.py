@@ -1,18 +1,13 @@
-import Config
+from Config import config, Generator
 import sys
 import time
 import math
 import numpy as np
-from Config import config
 import joblib
 from enum import Enum
 
 from tqdm import tqdm_notebook
 
-# enum for random vector generator type
-class Generator(Enum):
-    Vanilla = 1
-    Baklava = 2
 
 # Generate one random vector of desired length and generation type
 def generate_vector(vector_length, vector_type, param):
@@ -32,7 +27,8 @@ def bak_extend(tl, tr, bl, br, h, w):
     tr = np.concatenate((tr, suffix)).reshape((h, w, new_d))
     bl = np.concatenate((bl, suffix)).reshape((h, w, new_d))
     br = np.concatenate((br, suffix)).reshape((h, w, new_d))
-    #print("================")
+    #print("tl shape" + str(tl.shape))
+
     extended = []
     for i in range(0, h + 1):
         for j in range(0, w + 1):
@@ -76,16 +72,16 @@ def bak_extend(tl, tr, bl, br, h, w):
 # h, w, d, k: height, weight, dimension, kernel size
 def bak_layer(h, w, d, k, param):
     grid = []
-    for i in range((h-1)//k + 1):
+    for i in range(math.ceil((h-1)/k)+1):
         line = []
-        for j in range((w-1)//k + 1):
+        for j in range(math.ceil((w-1)/k)+1):
             line.append(generate_vector(d, param["vector"], param))
         grid.append(line)
     ext_grid = None
-    for i in range((h-1)//k):
+    for i in range(math.ceil((h-1)/k)):
         k_h = min(k, h-1-k*i)
         ext_line = None
-        for j in range((w-1)//k):
+        for j in range(math.ceil((w-1)/k)):
             k_w = min(k, w-1-k*j)
             extended = bak_extend(grid[i][j], grid[i][j+1], grid[i+1][j], grid[i+1][j+1], k_h, k_w)
             if ext_line is None:
@@ -184,12 +180,21 @@ class HD_basis:
         kArr = self.param["kArr"]
 
         layer = []
+        #print(dArr)
+        #print(kArr)
         for i in range(nLayers):
             sys.stderr.write("Layer No.%d: \t %d dimension vector with kernel of size %d\n"%(i, dArr[i], kArr[i]))
             layer.append(bak_layer(h, w, dArr[i], kArr[i], self.param))
-            #print(layer[-1])
+            print(layer[-1].shape)
         self.basis = np.concatenate(layer, axis = 2).reshape((F, D, -1))
+        #print("BASIS")
+        #print(self.basis)
         self.basis = np.swapaxes(self.basis, 0, 1)
+        #print("Swapped BASIS")
+        #print(self.basis)
+        self.basis = self.basis[:,:,0]
+        #print("Reduced BASIS")
+        #print(self.basis)
 
     def getBasis(self):
         return self.basis

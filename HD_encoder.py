@@ -21,6 +21,8 @@ def loadEncoded(filename):
     encoded, labels = joblib.load(filename)
     return encoded, labels
 
+# Class: HD_encoder
+# Use: take in a basis and a noise flag to create instance, call functions to with data to encode
 class HD_encoder:
     def __init__(self, basis, noise=True):
         self.basis = basis
