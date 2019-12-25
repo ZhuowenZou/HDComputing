@@ -89,5 +89,5 @@ config = {
   # number of times to run per encoding
   "iter_per_encoding": 5,
   # iterations per training (number of epochs)
-  "epochs": 50,
+  "epochs": 1000,
 }
