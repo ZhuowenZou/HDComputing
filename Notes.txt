@@ -1,8 +1,8 @@
 The current low accuracy for training with high dim HD vector basis and manifold learning results from both the parameter tuning (including n_neighbors and n-components (output dimensions)) and possibly the error form the projection.
 However, bringing the data dimension down helps bringing the HD dimension down, in the sense that, within acceptable decrease in accuracy, the dimension of the HD vectors can be greatly decreased.
 
-Proof: show MLLE/ISO 50/100, 25, 2500 vs Base 2500 (almost the same)
-	and MLLE/ISO 50/100, 25, 500  vs Base 500 (10% more) 
+Proof: show MLLE/ISO 50/100/200, 25, 2500 vs Base 2500 (almost the same)
+	and MLLE/ISO 50/100/200, 25, 500  vs Base 500 (10% more) 
 
 Hard and interesting to look deeper: how to find n_neighbor for dataset
 Hard and don't know how to do (yet): how to find n_component for dataset 
