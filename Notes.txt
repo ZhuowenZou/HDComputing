@@ -1,8 +1,28 @@
-(20000 train data) 
+The current low accuracy for training with high dim HD vector basis and manifold learning results from both the parameter tuning (including n_neighbors and n-components (output dimensions)) and possibly the error form the projection.
+However, bringing the data dimension down helps bringing the HD dimension down, in the sense that, within acceptable decrease in accuracy, the dimension of the HD vectors can be greatly decreased.
 
-4719: Vanilla 2500  	 		Train: 1.000000 	 	 Test: 0.955400
-9677: Baklava 2500 (1,3) 		Train: 0.998350 	 	 Test: 0.751000
-3850: Baklava 5000 (1,3) 		Train: 1.000000 	 	 Test: 0.848000
+Proof: show MLLE/ISO 50/100, 25, 2500 vs Base 2500 (almost the same)
+	and MLLE/ISO 50/100, 25, 500  vs Base 500 (10% more) 
 
-5407: Baklava 2500 (5,[1,1,1,1,3])	Train: 1.000000 	 	 Test: 0.949700
-6674: Baklava 2500 (5,[1,1,1,3,3])
+Hard and interesting to look deeper: how to find n_neighbor for dataset
+Hard and don't know how to do (yet): how to find n_component for dataset 
+
+
+TO collect: 
+time for building manifold, transforming data, and encode data (step 2, 3 and be streamlined nicely, and we care less about step 1)
+Train test accuracy hist
+log: param (n_componentsss, Ds, n_neighbors, types(baseline, ISO, MLLE)) id
+
+TODO: how many sample is enough 
+
+
+20000 train 5000 test 2000 manifold
+
+LLE 50,25,2500	Test: 0.888200
+LLE 100 25 2500 Train: 0.970250 	 	 Test: 0.917000
+
+MLLE 50, 25 2500	Train: 0.938000 	 	 Test: 0.924000 converge slowly, over fit in late state --> increase lr and try again?
+MLLE 100, 25 2500	Train: 0.970600 	 	 Test: 0.943200 converge slowly, overfit in late state --> increase lr and try again?
+MLLE 100, 25 500	Train: 0.964400 	 	 Test: 0.933600	
+
+Base 500		Train: 0.973300 	 	 Test: 0.830600
