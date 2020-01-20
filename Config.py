@@ -16,7 +16,7 @@ class Generator(Enum):
 # DATA set: its dir and filename.
 DATA = {
   "is": ("isolet", "isolet"),
-  "sh": ("smart_home", "smart_home_split"),
+  "sh": ("smart_home", "smart_home"),
   "es": ("ExtraSensory", "pos"),
   "mn": ("MNIST", "MNIST"),
   "uc": ("UCIHAR", "UCIHAR"),
@@ -25,8 +25,8 @@ DATA = {
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["mn"][0],
-  "dataset"       : DATA["mn"][1],   # directory and dataset
+  "directory"     : DATA["uc"][0],
+  "dataset"       : DATA["uc"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors
