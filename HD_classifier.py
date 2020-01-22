@@ -29,11 +29,16 @@ def kernel(x,y):
   gaussKernel = lambda x, y : gauss(x,y,25)
   polyKernel = lambda x,y : poly(x,y,3,5)
   cosKernel = lambda x,y : np.dot(x,y) / (np.linalg.norm(x) * np.linalg.norm(y))
-  #k = gaussKernel
-  #k = polyKernel
   k = dotKernel
-  #k = cosKernel
   return k(x,y)
+
+def rank_class(classes, sample):
+    val = [kernel(theclass, sample) for theclass in classes]
+    indexes = np.argsort(val)
+    ranks = np.zeros(len(indexes))
+    for i in range(len(indexes)):
+        ranks[indexes[i]] = len(classes) - i
+    return ranks
 
 class HD_classifier:
 
@@ -156,6 +161,7 @@ class HD_classifier:
         return prediction
 
     # TODO: reduce this to using predict??
+    # Maybe not
     def test(self, data, label):
 
         assert self.D == data.shape[1]
@@ -178,4 +184,31 @@ class HD_classifier:
                 correct += 1
             count += 1
         return correct / count
+
+    # Test using the segment ranking approach.
+    # K is the number of split
+    def test_rank(self, data, label, k):
+
+        assert self.D == data.shape[1]
+        # fit
+        r = list(range(data.shape[0]))
+        random.shuffle(r)
+        correct = 0
+        count = 0
+        for i in r:
+            sample = data[i]
+            guess = -1
+            answer = label[i]
+            rankSum = np.zeros(self.nClasses)
+            for seg in range(k):
+                rankSum = rankSum + rank_class(self.classes[:, seg * (self.D//k):(seg+1) * (self.D//k)], sample[seg * (self.D//k):(seg+1) * (self.D//k)])
+            guess = np.argmin(rankSum)
+            if guess == answer:
+                correct += 1
+            count += 1
+        return correct / count
+
+
+
+
 

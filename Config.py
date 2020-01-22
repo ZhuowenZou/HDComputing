@@ -30,7 +30,7 @@ config = {
 
   ################ HD general #####################
   # Dimension of HD vectors
-  "D" : 2500,
+  "D" : 10000,
   # Gaussian random vector generation
   "vector" : "Gaussian",  # Gaussian
   "mu" : 0,
