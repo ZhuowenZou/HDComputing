@@ -30,7 +30,7 @@ config = {
 
   ################ HD general #####################
   # Dimension of HD vectors
-  "D" : 2500,
+  "D" : 5000,
   # Gaussian random vector generation
   "vector" : "Gaussian",  # Gaussian
   "mu" : 0,
@@ -61,7 +61,7 @@ config = {
   "dArr" : None,
 
   # Filter/kernel size for every layer (uniform filter); preferably, k | width-1 and height-1 of 2d features.
-  "k" : 5,
+  "k" : 3,
   # Filter sizes for each layer (non-uniform filter); each preferably divides width-1 and height-1
   "kArr" : None,
 
@@ -89,5 +89,5 @@ config = {
   # number of times to run per encoding
   "iter_per_encoding": 5,
   # iterations per training (number of epochs)
-  "epochs": 50,
+  "epochs": 100,
 }

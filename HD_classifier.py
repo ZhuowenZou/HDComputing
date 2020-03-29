@@ -104,7 +104,7 @@ class HD_classifier:
         # Actual fitting
 
         # handling dropout
-        mask = np.asarray([1 for _ in range(self.D)])
+        mask = np.ones(self.D)
         if param["dropout"]:
             for option in self.options_dropout:
                 if option not in param:
@@ -123,13 +123,16 @@ class HD_classifier:
             assert data[i].shape == mask.shape
 
             answer = label[i]
-            maxVal = -1
-            guess = -1
-            for m in range(self.nClasses):
-                val = kernel(self.classes[m], sample)
-                if val > maxVal:
-                    maxVal = val
-                    guess = m
+            #maxVal = -1
+            #guess = -1
+            #for m in range(self.nClasses):
+            #    val = kernel(self.classes[m], sample)
+            #    if val > maxVal:
+            #        maxVal = val
+            #        guess = m
+            vals = np.matmul(sample, self.classes.T)
+            guess = np.argmax(vals)
+            
             if guess != answer:
                 self.update(data[i], mask, guess, answer, param["lr"])
             else:

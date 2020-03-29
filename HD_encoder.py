@@ -35,9 +35,11 @@ class HD_encoder:
 
     #encode one vector/sample into a HD vector
     def encodeDatum(self, datum):
-        encoded = np.empty(self.D)
-        for i in range(self.D):
-            encoded[i] = np.cos(np.dot(datum, self.basis[i]) + self.noises[i]) * np.sin(np.dot(datum, self.basis[i]))
+        #encoded = np.empty(self.D)
+        #for i in range(self.D):
+        #    encoded[i] = np.cos(np.dot(datum,self.basis[i]) + self.noises[i]) * np.sin(np.dot(datum, self.basis[i]))
+        encoded = np.matmul(self.basis, datum)
+        encoded = np.cos(encoded)
         return encoded
 
     # encode data using the given basis

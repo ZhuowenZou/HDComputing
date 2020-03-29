@@ -1,0 +1,2 @@
+Max train: 100.00 	Max test: 97.32 
+{'D': 5000, 'nLayers': 6, 'uniform_dim': 1, 'uniform_ker': 1, 'dArr': [833, 833, 833, 833, 833, 835], 'k': 3, 'kArr': [3, 3, 3, 3, 3, 3]}

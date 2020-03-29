@@ -172,7 +172,9 @@ class HD_basis:
         nLayers = self.param["nLayers"]
         sys.stderr.write("Configuring baklava HD basis of %d layers:\n"%nLayers)
         if self.param["uniform_dim"]:
-            self.param["dArr"] = [ self.param["D"]//nLayers for _ in range(nLayers)]
+            self.param["dArr"] = [ self.param["D"]//nLayers for _ in range(nLayers-1)]
+            # Include the remainders so that the final dim match D
+            self.param["dArr"].append(self.param["D"] - sum(self.param["dArr"]))
         if self.param["uniform_ker"]:
             assert self.param["k"] is not None
             self.param["kArr"] = [ self.param["k"] for _ in range(nLayers)]
