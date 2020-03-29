@@ -144,7 +144,8 @@ class HD_basis:
             self.baklava()
         end = time.time()
         sys.stderr.write('Encoding time: %s \n' % str(end - start))
-        self.filename = saveBasis(self.basis, self.param)
+        if "checkpoints" in param and param["checkpoints"]:
+            self.filename = saveBasis(self.basis, self.param)
 
     def vanilla(self):
 

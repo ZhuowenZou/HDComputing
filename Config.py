@@ -45,6 +45,7 @@ config = {
   "s" : 0.1,
   # binary model
   "binaryModel" : 0,
+  "checkpoints": False, # whether to have checkpoint files.
 
   ################### Baklava #######################
   "width": None,
