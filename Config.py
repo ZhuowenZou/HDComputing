@@ -9,7 +9,7 @@ class Update_T(Enum):
 # enum for random vector generator type
 class Generator(Enum):
   Vanilla = 1
-  Baklava = 2
+  Baklava = 2 # Conv Learning 
 
 ################ Data #####################
 
@@ -17,6 +17,7 @@ class Generator(Enum):
 DATA = {
   "is": ("isolet", "isolet"),
   "sh": ("smart_home", "smart_home"),
+  "shs": ("smart_home", "smart_home_split"),
   "es": ("ExtraSensory", "pos"),
   "mn": ("MNIST", "MNIST"),
   "uc": ("UCIHAR", "UCIHAR"),
@@ -30,7 +31,7 @@ config = {
 
   ################ HD general #####################
   # Dimension of HD vectors
-  "D" : 2500,
+  "D" : 3000,
   # Gaussian random vector generation
   "vector" : "Gaussian",  # Gaussian
   "mu" : 0,
@@ -85,9 +86,9 @@ config = {
 
   ################## Train / Test iterations ##########
   # number of trials to run per experiment
-  "iter_per_trial": 3,
+  "iter_per_trial": 2,
   # number of times to run per encoding
-  "iter_per_encoding": 5,
+  "iter_per_encoding": 2,
   # iterations per training (number of epochs)
   "epochs": 250,
 }
