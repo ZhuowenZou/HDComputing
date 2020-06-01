@@ -7,9 +7,15 @@ class Update_T(Enum):
   HALF = 4
 
 # enum for random vector generator type
-class Generator(Enum):
+class Generator_T(Enum):
   Vanilla = 1
   Baklava = 2
+
+class Kernel_T(Enum):
+  DOT = 0
+  COS = 1
+  BIN = 2
+
 
 ################ Data #####################
 
@@ -46,6 +52,7 @@ config = {
   # binary model
   "binaryModel" : 0,
   "checkpoints": False, # whether to have checkpoint files.
+  "kernel": Kernel_T.COS,
 
   ################### Baklava #######################
   "width": None,

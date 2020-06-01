@@ -2,7 +2,7 @@ import Config
 import sys
 import random
 import numpy as np
-from Config import config, Update_T
+from Config import config, Update_T, Kernel_T
 
 
 def sgn(i):
@@ -24,21 +24,45 @@ def poly(x,y,c,d):
   return (np.dot(x,y) + c) ** d
 
 #  dot product/ gauss product/ cos product
-def kernel(x,y):
+def kernel(x,y, kernel_t = Kernel_T.COS):
   dotKernel = np.dot
   gaussKernel = lambda x, y : gauss(x,y,25)
   polyKernel = lambda x,y : poly(x,y,3,5)
-  cosKernel = lambda x,y : np.dot(x,y) / (np.linalg.norm(x) * np.linalg.norm(y))
-  #k = gaussKernel
-  #k = polyKernel
-  k = dotKernel
-  #k = cosKernel
-  return k(x,y)
+  cosKernel = lambda x,y : np.dot(x,y) / (np.linalg.norm(x))
+
+  if kernel_t == Kernel_T.COS:
+      k = cosKernel
+  elif kernel_t == Kernel_T.DOT:
+      k = dotKernel
+  elif kernel_t == Kernel_T.Bin:
+      print("TODO_TYPES!")
+      k = None
+  else:
+      print("Type unrecognized!")
+      k = None
+  return k(x, y)
+
+# X: set of vectors; y: one vector
+def batch_kernel(X, y, kernel_t = Kernel_T.COS):
+    dotKernel = lambda X, y: np.matmul(y, X.T)
+    cosKernel = lambda X, y: np.matmul(y, X.T)/(np.linalg.norm(X, axis = 1))
+    if kernel_t == Kernel_T.COS:
+        k = cosKernel
+    elif kernel_t == Kernel_T.DOT:
+        k = dotKernel
+    elif kernel_t == Kernel_T.Bin:
+        # remember that when dealling with hamming distance, the smaller the better
+        print("TODO_TYPES!")
+        k = None
+    else:
+        print("Type unrecognized!")
+        k = None
+    return k(X, y)
 
 class HD_classifier:
 
     # Required parameters for the training it supports; will enhance later
-    options = ["one_shot", "dropout", "lr"]
+    options = ["one_shot", "dropout", "lr", "kernel"]
     # required opts for dropout
     options_dropout = ["dropout_rate", "update_type"]
 
@@ -73,8 +97,8 @@ class HD_classifier:
     def update(self, weight, mask, guess, answer, rate, update_type=Update_T.FULL):
         sample = weight * mask
         if update_type == Update_T.FULL:
-            self.classes[guess]  -= rate * sample
-            self.classes[answer] += rate * sample
+            self.classes[guess]  -= rate * weight
+            self.classes[answer] += rate * weight
         elif update_type == Update_T.PARTIAL:
             self.classes[guess]  -= rate * sample
             self.classes[answer] += rate * weight
@@ -130,7 +154,7 @@ class HD_classifier:
             #    if val > maxVal:
             #        maxVal = val
             #        guess = m
-            vals = np.matmul(sample, self.classes.T)
+            vals = batch_kernel(self.classes, sample, param["kernel"])
             guess = np.argmax(vals)
             
             if guess != answer:
@@ -140,6 +164,51 @@ class HD_classifier:
             count += 1
         self.first_fit = False
         return correct / count
+
+    # Used for one-pass training. Adaptive learning (learning each sample with weight) will be added in the future.
+    # fit_type currently only support None, which is naive update
+    def fit_once(self, data, label, param = None, fit_type = None):
+
+        assert self.D == data.shape[1]
+
+        # Default parameter
+        if param is None:
+            param = Config.config
+        for option in self.options:
+            if option not in param:
+                param[option] = config[option]
+        if self.first_fit:
+            sys.stderr.write("Fitting with configuration: %s \n" % str([(k, param[k]) for k in self.options]))
+
+        # Actual fitting
+
+        # fit
+        r = list(range(data.shape[0]))
+        random.shuffle(r)
+        correct = 0
+        count = 0
+        for i in r:
+            sample = data[i]
+            answer = label[i]
+
+            #maxVal = -1
+            #guess = -1
+            #for m in range(self.nClasses):
+            #    val = kernel(self.classes[m], sample)
+            #    if val > maxVal:
+            #        maxVal = val
+            #        guess = m
+            vals = batch_kernel(self.classes, sample)
+            guess = np.argmax(vals)
+
+            self.update(sample, np.ones(self.D), guess, answer, param["lr"], Update_T.HALF)
+
+            if guess == answer:
+                correct += 1
+            count += 1
+        self.first_fit = False
+        return correct / count
+
     def predict(self, data):
 
         assert self.D == data.shape[1]

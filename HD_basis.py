@@ -1,4 +1,4 @@
-from Config import config, Generator
+from Config import config, Generator_T
 import sys
 import time
 import math
@@ -113,8 +113,8 @@ class HD_basis:
 
     # required parameters for generator types from the dataset (not Config)
     param_req = {
-        Generator.Vanilla: [],
-        Generator.Baklava: ["nLayers", "uniform_dim", "uniform_ker"]
+        Generator_T.Vanilla: [],
+        Generator_T.Baklava: ["nLayers", "uniform_dim", "uniform_ker"]
     }
     # general parameters from Config
     param_config = ["nFeatures", "nClasses", "D", "sparse", "s", "vector", "mu", "sigma", "binarize"]
@@ -138,9 +138,9 @@ class HD_basis:
 
         start = time.time()
         self.param["gen_type"] = gen_type
-        if gen_type == Generator.Vanilla:
+        if gen_type == Generator_T.Vanilla:
             self.vanilla()
-        elif gen_type == Generator.Baklava:
+        elif gen_type == Generator_T.Baklava:
             self.baklava()
         end = time.time()
         sys.stderr.write('Encoding time: %s \n' % str(end - start))
