@@ -2,7 +2,12 @@ import Config
 import sys
 import random
 import numpy as np
+import copy
+import sklearn
+from scipy import stats
 from Config import config, Update_T, Kernel_T
+
+
 
 
 def sgn(i):
@@ -23,6 +28,24 @@ def gauss(x,y,std):
 def poly(x,y,c,d):
   return (np.dot(x,y) + c) ** d
 
+def binarize(X):
+    return np.where(X >= 0, 1, -1)
+
+# X should be the class matrix of shape nClasses * D
+# 0 is mapped to most lowest value and 2^(bits)-1 highest
+def quantize(X, bits):
+    Nbins = 2**bits
+    # ultimate cheess
+    bins = [ (i/(Nbins)) for i in range(Nbins)]
+   # notice the axis along which to normalize is always the last one
+    nX = stats.norm.cdf(stats.zscore(X, axis = X.ndim-1))
+    nX = np.digitize(nX, bins) - 1
+    #print("Max and min bin value:", np.max(nX), np.min(nX))
+    #print("Quantized from ", X)
+    #print("To", nX)
+    return nX
+
+
 #  dot product/ gauss product/ cos product
 def kernel(x,y, kernel_t = Kernel_T.COS):
   dotKernel = np.dot
@@ -34,7 +57,7 @@ def kernel(x,y, kernel_t = Kernel_T.COS):
       k = cosKernel
   elif kernel_t == Kernel_T.DOT:
       k = dotKernel
-  elif kernel_t == Kernel_T.Bin:
+  elif kernel_t == Kernel_T.PL1:
       print("TODO_TYPES!")
       k = None
   else:
@@ -42,22 +65,35 @@ def kernel(x,y, kernel_t = Kernel_T.COS):
       k = None
   return k(x, y)
 
+def hamming_map(X, y, mapping):
+    ans = []
+    for x in X:
+        vec = abs(x - y)
+        #print(x ,y, vec)
+        vec = [mapping[int(v)] for v in vec]
+        ans.append(sum(vec))
+    ans = max(ans) - np.asarray(ans) # invert distance so that larger is closer
+    return ans
+
 # X: set of vectors; y: one vector
 def batch_kernel(X, y, kernel_t = Kernel_T.COS):
+    #print("Kernel type:", kernel_t)
+    ny = copy.deepcopy(y)
     dotKernel = lambda X, y: np.matmul(y, X.T)
     cosKernel = lambda X, y: np.matmul(y, X.T)/(np.linalg.norm(X, axis = 1))
     if kernel_t == Kernel_T.COS:
         k = cosKernel
     elif kernel_t == Kernel_T.DOT:
         k = dotKernel
-    elif kernel_t == Kernel_T.Bin:
-        # remember that when dealling with hamming distance, the smaller the better
-        print("TODO_TYPES!")
-        k = None
+    elif kernel_t in [Kernel_T.PL1, Kernel_T.PL3, Kernel_T.PL4]:
+        # remember that when dealing with hamming distance, the smaller the better
+        k = dotKernel
+    elif kernel_t in [Kernel_T.BT1, Kernel_T.BT3, Kernel_T.BT4]:
+        k = lambda X, y: hamming_map(X,y, Config.mapping[kernel_t])
     else:
-        print("Type unrecognized!")
-        k = None
-    return k(X, y)
+        print("Unrecognized batch kernel type! revert to dot")
+        k = dotKernel
+    return k(X, ny)
 
 class HD_classifier:
 
@@ -70,7 +106,8 @@ class HD_classifier:
     def __init__(self, D, nClasses, id):
         self.D = D
         self.nClasses = nClasses
-        self.classes = np.zeros((nClasses, D))
+        #self.classes = np.zeros((nClasses, D))
+        self.classes = np.random.normal(0, 1, (nClasses, D))
         # If first fit, print out complete configuration
         self.first_fit = True
         self.id = id
@@ -110,15 +147,105 @@ class HD_classifier:
         else:
             raise Exception("unrecognized Update_T")
 
-    # update class vectors with each sample, once
-    # return train accuracy
-    def fit(self, data, label, param = None):
+
+    def preprocess_classes(self, X, kernel_t):
+        # Make copy of inference model and data (for quantization)
+        # Preprocess inference model according to eval method
+        new_X = None
+        if kernel_t == Kernel_T.PL1:
+            new_X = binarize(X)
+        elif kernel_t == Kernel_T.PL3:
+            new_X = quantize(X, 3) - (3 ** 2 - 1) / 2
+        elif kernel_t == Kernel_T.PL4:
+            new_X = quantize(X, 4) - (4 ** 2 - 1) / 2
+        elif kernel_t == Kernel_T.BT1:
+            new_X = quantize(X, 1)
+        elif kernel_t == Kernel_T.BT3:
+            new_X = quantize(X, 3)
+        elif kernel_t == Kernel_T.BT4:
+            new_X = quantize(X, 4)
+        else:
+            new_X = copy.deepcopy(X)
+        return np.asarray(new_X)
+
+    def preprocess_data(self, X, kernel_t):
+        new_X = None
+        if kernel_t == Kernel_T.BT1:
+            new_X = quantize(X, 1)
+        elif kernel_t == Kernel_T.BT3:
+            new_X = quantize(X, 3)
+        elif kernel_t == Kernel_T.BT4:
+            new_X = quantize(X, 4)
+        else:
+            new_X = copy.deepcopy(X)
+        return np.asarray(new_X)
+
+    # sep fitting updates class vectors only after all evaluation is done
+    # Support binary, 1/3/4-bit training
+    def fit_sep(self, data, label, param = Config.config):
 
         assert self.D == data.shape[1]
 
         # Default parameter
-        if param is None:
-            param = Config.config
+        for option in self.options:
+            if option not in param:
+                param[option] = config[option]
+        if self.first_fit:
+            sys.stderr.write("Sep Fitting with configuration: %s \n" % str([(k, param[k]) for k in self.options]))
+
+        # Actual fitting
+
+        # handling dropout
+        mask = np.ones(self.D)
+        if param["dropout"]:
+            for option in self.options_dropout:
+                if option not in param:
+                    param[option] = config[option]
+            # Mask for dropout
+            for i in np.random.choice(self.D, int(self.D * (param["drop_rate"])), replace=False):
+                mask[i] = 0
+
+        # Make copy of inference model and data (for quantization)
+        kernel_t = param["kernel"]
+        og_classes = self.preprocess_classes(self.classes, kernel_t)
+        #data_cp = self.preprocess_data(data, kernel_t)
+
+        # fit
+        r = list(range(data.shape[0]))
+        random.shuffle(r)
+        correct = 0
+        count = 0
+        for i in r:
+            assert data[i].shape == mask.shape
+
+            sample = data[i] * mask
+            answer = label[i]
+            # maxVal = -1
+            # guess = -1
+            # for m in range(self.nClasses):
+            #    val = kernel(self.classes[m], sample)
+            #    if val > maxVal:
+            #        maxVal = val
+            #        guess = m
+            vals = batch_kernel(og_classes, sample, param["kernel"])
+            guess = np.argmax(vals)
+
+            if guess != answer:
+                self.update(data[i], mask, guess, answer, param["lr"])
+            else:
+                correct += 1
+            count += 1
+        self.first_fit = False
+        return correct / count
+
+    # update class vectors with each sample, once
+    # return train accuracy
+    # TODO: not yet support BT1 BT3 BT4
+    def fit(self, data, label, param = Config.config):
+
+        assert self.D == data.shape[1]
+
+        # Default parameter
         for option in self.options:
             if option not in param:
                 param[option] = config[option]
@@ -167,13 +294,11 @@ class HD_classifier:
 
     # Used for one-pass training. Adaptive learning (learning each sample with weight) will be added in the future.
     # fit_type currently only support None, which is naive update
-    def fit_once(self, data, label, param = None, fit_type = None):
+    def fit_once(self, data, label, param = Config.config):
 
         assert self.D == data.shape[1]
 
         # Default parameter
-        if param is None:
-            param = Config.config
         for option in self.options:
             if option not in param:
                 param[option] = config[option]
@@ -185,8 +310,6 @@ class HD_classifier:
         # fit
         r = list(range(data.shape[0]))
         random.shuffle(r)
-        correct = 0
-        count = 0
         for i in r:
             sample = data[i]
             answer = label[i]
@@ -198,54 +321,45 @@ class HD_classifier:
             #    if val > maxVal:
             #        maxVal = val
             #        guess = m
-            vals = batch_kernel(self.classes, sample)
-            guess = np.argmax(vals)
+            guess = 0 # guess is a don't care
 
             self.update(sample, np.ones(self.D), guess, answer, param["lr"], Update_T.HALF)
 
-            if guess == answer:
-                correct += 1
-            count += 1
         self.first_fit = False
-        return correct / count
+        return -1
 
-    def predict(self, data):
+    def predict(self, data, param = Config.config):
 
         assert self.D == data.shape[1]
 
         prediction = []
 
-        # fit
-        for i in range(len(data.shape[0])):
-            maxVal = -1
-            guess = -1
-            for m in range(self.nClasses):
-                val = kernel(self.classes[m], data[i])
-                if val > maxVal:
-                    maxVal = val
-                    guess = m
+        # Make copy of inference model and data (for quantization)
+        kernel_t = param["kernel"]
+        og_classes = self.preprocess_classes(self.classes, kernel_t)
+        #data_cp = self.preprocess_data(data, kernel_t)
+
+        for i in range(data.shape[0]):
+            vals = batch_kernel(og_classes, data[i])
+            guess = np.argmax(vals)
             prediction.append(guess)
         return prediction
 
-    # TODO: reduce this to using predict??
-    def test(self, data, label):
+    def test(self, data, label, kernel_t = Kernel_T.DOT):
 
         assert self.D == data.shape[1]
 
+        # Make copy of inference model and data (for quantization)
+        og_classes = self.preprocess_classes(self.classes, kernel_t)
+        #data_cp = self.preprocess_data(data, kernel_t)
+
         # fit
-        r = list(range(data.shape[0]))
-        random.shuffle(r)
         correct = 0
         count = 0
-        for i in r:
+        for i in range(data.shape[0]):
             answer = label[i]
-            maxVal = -1
-            guess = -1
-            for m in range(self.nClasses):
-                val = kernel(self.classes[m], data[i])
-                if val > maxVal:
-                    maxVal = val
-                    guess = m
+            vals = batch_kernel(og_classes, data[i])
+            guess = np.argmax(vals)
             if guess == answer:
                 correct += 1
             count += 1

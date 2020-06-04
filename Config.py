@@ -14,15 +14,24 @@ class Generator_T(Enum):
 class Kernel_T(Enum):
   DOT = 0
   COS = 1
-  BIN = 2
+  PL1 = 2 # This is binary - polarize as in {(-1, 1)}
+  PL3 = 3
+  PL4 = 4
+  BT1 = 5 # This is binary as in {(0,1)} with hamming distance
+  BT3 = 6
+  BT4 = 7
 
+mapping = { Kernel_T.BT1: [0, 1],
+            Kernel_T.BT3: [6.19, 11.7, 35.3, 92.3, 189, 303, 410, 499],
+            Kernel_T.BT4: [1.02, 1.44, 3.10, 7.21, 16.3, 34.1, 65.9, 115,
+                           180, 254, 329, 398, 459, 513, 558, 598]}
 
 ################ Data #####################
 
 # DATA set: its dir and filename.
 DATA = {
   "is": ("isolet", "isolet"),
-  "sh": ("smart_home", "smart_home_split"),
+  "shs": ("smart_home", "smart_home_split"),
   "es": ("ExtraSensory", "pos"),
   "mn": ("MNIST", "MNIST"),
   "uc": ("UCIHAR", "UCIHAR"),
@@ -36,7 +45,7 @@ config = {
 
   ################ HD general #####################
   # Dimension of HD vectors
-  "D" : 5000,
+  "D" : 2000,
   # Gaussian random vector generation
   "vector" : "Gaussian",  # Gaussian
   "mu" : 0,
@@ -45,14 +54,15 @@ config = {
   "binarize" : 0,
   # Learning rate
   # if binarize make lr 1
-  "lr" : 0.037, #"lr" : 1,
+  "lr" : 0.037,
+  #"lr" : 1,
   # Obsolete: whether the vector should be sparse, and how sparse
   "sparse" : 0,
   "s" : 0.1,
   # binary model
   "binaryModel" : 0,
   "checkpoints": False, # whether to have checkpoint files.
-  "kernel": Kernel_T.COS,
+  "kernel": Kernel_T.DOT,
 
   ################### Baklava #######################
   "width": None,
@@ -97,5 +107,5 @@ config = {
   # number of times to run per encoding
   "iter_per_encoding": 5,
   # iterations per training (number of epochs)
-  "epochs": 100,
+  "epochs": 80,
 }
