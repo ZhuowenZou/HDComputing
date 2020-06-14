@@ -40,12 +40,12 @@ DATA = {
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["uc"][0],
-  "dataset"       : DATA["uc"][1],   # directory and dataset
+  "directory"     : DATA["es"][0],
+  "dataset"       : DATA["es"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors
-  "D" : 100,
+  "D" : 500,
   # Gaussian random vector generation
   "vector" : "Gaussian",  # Gaussian
   "mu" : 0,
@@ -107,5 +107,5 @@ config = {
   # number of times to run per encoding
   "iter_per_encoding": 5,
   # iterations per training (number of epochs)
-  "epochs": 80,
+  "epochs": 100,
 }

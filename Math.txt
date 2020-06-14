@@ -1,0 +1,43 @@
+Notation:
+
+Suppose class a, b is to be distinguished. We use subscript a,b to determine which class we're referring to (C_a, C_b), or which class a sample actually belongs to (s_a, s_b belong to class a, class b respectively) 
+We use i to denote the dimension index. C_{a,i} will be C_a[i] in code, per se.
+We also use * to denote component wise multiplication between vectors, while x is dot product.  
+
+D_a is the "matching difference vector" of a sample in class a. D_b similarly defined. Equation is shown below.
+
+d_a is the "mismatch difference vector" of a sample in class a. d_b similarly defined. Equation is shown below.
+
+(D_a = -d_a, D_b = -d_b)
+
+Question: how to determine a good dimention for (Ca, Cb): 
+1. D_{a,i} = s_{a,i}C_{a,i} - s_{a,i}C_{b,i} >> 0 
+	AND 
+   d_{b,i} = s_{b,i}C_{a,i} - s_{b,i}C_{b,i} is trivial or negative 
+	(==> D_{a,i} - d_{b,i} >> 0 ???)
+
+OR
+
+2. D_{b,i} = s_{b,i}C_{b,i} - s_{b,i}C_{a,i} >> 0 
+	AND 
+   d_{a,i} = s_{a,i}C_{b,i} - s_{a,i}C_{a,i} is trivial or negative 
+	(==> D_{b,i} - d_{a,i} >> 0 ???)
+
+==> S_a = sum(s_a)
+
+==> 1 and 2 are equivalent by deduction, we may only care about 1: 
+	Weight_i = D_{a,i} - d_{b,i}
+	= s_{a,i}C_{a,i} - s_{a,i}C_{b,i} - (s_{b,i}C_{a,i} - s_{b,i}C_{b,i})
+	= (s_{a,i} - s_{b,i})(C_{a,i] - C_{b,i}) >> 0
+
+	Weigh_i << 0: negation of it may work well.
+	(NOTE: maybe 0)
+
+	Weight = mask 
+
+
+1. How to get the value:
+	data[i] x (weight * C_a) 
+	data[i] x (weight * C_b) 
+
+

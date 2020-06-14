@@ -113,6 +113,8 @@ class HD_classifier:
         self.bmask2d = None
         self.mask1d = None
         self.bmask1d = None
+        self.decider = np.zeros((nClasses, nClasses))
+        self.debug = False
 
     def resetModel(self, basis = None, D = None, nClasses = None, id = None, reset = True):
         if basis is not None:
@@ -132,6 +134,9 @@ class HD_classifier:
 
     def getClasses(self):
         return self.classes
+
+    def normalizeClasses(self):
+        self.classes = sklearn.preprocessing.normalize(np.asarray(self.classes), norm='l2')
 
     def update(self, weight, answer, guess, rate, mask = None, update_type=Update_T.FULL):
         sample = weight
@@ -362,7 +367,7 @@ class HD_classifier:
             elif answer == fst:
                 #print("Updating mask (%d, %d)"%(fst, snd))
                 #self.mask2d[fst][snd] += abs(data[i] * (self.classes[fst] - self.classes[snd]))
-                #self.mask2d[fst][snd] += data[i] * (self.classes[fst] - self.classes[snd])
+                self.mask2d[fst][snd] += data[i] * (self.classes[fst] - self.classes[snd])
                 pass
             elif answer == snd:
                 self.mask2d[snd][fst] += data[i] * (self.classes[snd] - self.classes[fst])
@@ -480,13 +485,39 @@ class HD_classifier:
             count += 1
         return correct / count
 
+
+    def prep_bi_mask(self, c1_mask, c2_mask, percent, debug = None):
+
+        if debug is None:
+            debug = self.debug
+
+        mask = c1_mask - c2_mask
+        bmask = np.zeros(len(mask))
+        amountKeep = int(percent * len(mask))
+        # print(mask)
+
+        order = np.argsort(mask)
+        if debug:
+            print("The negative of these values are assigned to -1")
+            print(mask[order[:amountKeep]])
+            print("These are assigned to 1")
+            print(mask[order[-amountKeep:]])
+        for k in order[:amountKeep]:
+            if mask[k] < 0:
+                bmask[k] = 0
+        for k in order[-amountKeep:]:
+            if mask[k] > 0:
+                bmask[k] = 1
+        return bmask
+
+
     def prep_mask(self, percent = 0.25):
 
         # Normalize mask2d
-        self.mask2d = np.asarray(self.mask2d)
-        masks = self.mask2d = np.reshape(sklearn.preprocessing.normalize(np.reshape(self.mask2d, (-1, self.D)),
-                                                                         norm='l2'),
-                                         (self.nClasses, self.nClasses, self.D))
+        masks = self.mask2d = np.asarray(self.mask2d)
+        #masks = self.mask2d = np.reshape(sklearn.preprocessing.normalize(np.reshape(self.mask2d, (-1, self.D)),
+        #                                                                 norm='l2'),
+        #                                 (self.nClasses, self.nClasses, self.D))
         bmask2d = np.zeros(masks.shape)
         amountKeep = int(self.D * percent)
         #print(amountKeep)
@@ -495,13 +526,15 @@ class HD_classifier:
         for i in range(self.nClasses):
             for j in range(self.nClasses):
                 # Skip the mask if is nan
-                if np.isnan(np.sum(masks[i][j])):
+                if np.isnan(np.sum(masks[i][j])) or np.isnan(np.sum(masks[j][i])) or i >= j:
                     continue
-                order = np.argsort(masks[i][j])
-                for k in order[:amountKeep]:
-                    bmask2d[i][j][k] = 0
-                for k in order[-amountKeep:]:
-                    bmask2d[i][j][k] = 1
+                #order = np.argsort(masks[i][j])
+                #for k in order[:amountKeep]:
+                #    bmask2d[i][j][k] = -1
+                #for k in order[-amountKeep:]:
+                #    bmask2d[i][j][k] = 1
+                bmask2d[i][j] = self.prep_bi_mask(masks[i][j], masks[j][i], percent)
+                bmask2d[j][i] = -bmask2d[i][j]
         self.bmask2d = bmask2d
 
         mask1d = np.zeros((self.nClasses, self.D))
@@ -526,6 +559,35 @@ class HD_classifier:
         self.bmask1d = bmask1d
         return
 
+
+    def set_decider(self, data, label, threshold = 0.5, dominance = None, mask_t = "o", mask_d = 2, kernel_t = Config.config["kernel"], debug = None):
+
+        if debug is None:
+            debug = self.debug
+        
+        if debug:
+            print("set_decider invokes test_mask. You may ignore output for now")
+            
+        _, _, _, _, _, _, _, _, mat, net_mat = self.test_mask(data, label, 0, dominance, mask_t, mask_d, kernel_t, debug)
+        rate = net_mat/mat
+        
+        if debug:
+            print("Before patitition:\n", rate)
+        for i in range(self.nClasses):
+            for j in range(self.nClasses):
+                if np.isnan(rate[i][j]):
+                    rate[i][j] = 0
+                elif rate[i][j] <= threshold:
+                    rate[i][j] = -1
+                elif rate[i][j] >= 1-threshold:
+                    rate[i][j] = 1
+                else:
+                    rate[i][j] = 0
+        if debug:
+            print("After patitition:\n", rate)
+        self.decider = rate
+        return rate
+
     def mask_selector(self, mask_t, mask_d):
         masks = None
         if mask_t == "o":
@@ -540,7 +602,10 @@ class HD_classifier:
                 masks = self.bmask2d
         return masks
 
-    def test_mask(self, data, label, threshold = 1, dominance = None, mask_t = "o", mask_d = 2, kernel_t = Config.config["kernel"]):
+    def test_mask(self, data, label, threshold = 1, dominance = None, mask_t = "o", mask_d = 2, kernel_t = Config.config["kernel"], debug = None):
+
+        if debug is None:
+            debug = self.debug
         assert self.D == data.shape[1]
 
         # Make copy of inference model and data (for quantization)
@@ -558,6 +623,7 @@ class HD_classifier:
         wrong_3 = 0 # When the answer is not in top 2
 
         matrix = np.zeros((self.nClasses, self.nClasses))
+        net_matrix = np.zeros((self.nClasses,self.nClasses))
         count = 0
 
         masks = self.mask_selector(mask_t, mask_d)
@@ -581,17 +647,16 @@ class HD_classifier:
             elif not np.isnan(np.sum(masks[fst][snd])) and not np.isnan(np.sum(masks[snd][fst])):
                 if mask_d == 2:
                     the_mask = masks[fst][snd] - masks[snd][fst]
-                    if np.sum(the_mask) == 0:
-                        print("Found untrained mask (%d, %d) during testing" % (fst, snd))
-                        print("Their submasks starts with:")
-                        print(masks[fst][snd][0:10], masks[snd][fst][0:10])
-                        print("Selecting fst by default")
-                        continue
+                    #if np.sum(the_mask) == 0:
+                    #    print("Found untrained mask (%d, %d) during testing" % (fst, snd))
+                    #    print("Their submasks starts with:")
+                    #    print(masks[fst][snd][0:10], masks[snd][fst][0:10])
+                    #    print("Selecting fst by default")
+                    #    continue
                     fst_sc = np.dot((data[i] * the_mask), self.classes[fst])
-                    snd_sc = np.dot((data[i] * the_mask), self.classes[snd])
-                    ratio = fst_sc - snd_sc
-                    if ratio < 0:
-                       guess = snd
+                    snd_sc = -np.dot((data[i] * the_mask), self.classes[snd])
+                    if snd_sc > fst_sc:
+                        guess = snd
                     #score = np.dot(data[i]*(self.classes[fst]-self.classes[snd]),(masks[fst][snd] - masks[snd][fst]))
                     #if score < 0:
                     #    guess = snd
@@ -606,35 +671,156 @@ class HD_classifier:
                     print("Error in determining mask dimensions")
                     return
 
+                # Handle matrices
+                matrix[fst][snd] += 1
+                if guess == answer:
+                    net_matrix[fst][snd] += 1
+                else:
+                    net_matrix[fst][snd] -= 1
+
+
             if answer == guess:
                 correct += 1
                 if guess == snd:
                     correct_r += 1
-                    print("Correctly selected the second:")
-                    print(fst, snd)
-                    #print(the_mask)
-                    print(ratio)
+                    if debug:
+                        print("Correctly selected the second:")
+                        print(fst, snd)
+                        #print(the_mask)
+                        print(ratio)
+
             if fst == answer:
                 correct_1 += 1
                 if guess != fst:
                     wrong_1 += 1
-                    matrix[fst,snd] += 1
-                    print("Wrongly selected the second:")
-                    print(fst, snd)
-                    #print(the_mask)
-                    print(ratio)
+                    if debug:
+                        print("Wrongly selected the second:")
+                        print(fst, snd)
+                        #print(the_mask)
+                        print(ratio)
             elif snd == answer:
                 correct_2 += 1
                 if guess != snd:
                     wrong_2 += 1
-                    matrix[snd, fst] += 1
-                    print("Wrongly selected the first:")
-                    print(fst, snd)
-                    print(ratio)
+                    if debug:
+                        print("Wrongly selected the first:")
+                        print(fst, snd)
+                        print(ratio)
             else:
                 wrong_3 += 1
             count += 1
-        return correct, correct_1, correct_2, correct_r, wrong_1, wrong_2, wrong_3, count, matrix
+        return correct, correct_1, correct_2, correct_r, wrong_1, wrong_2, wrong_3, count, matrix, net_matrix
+
+    def test_decider(self, data, label, threshold = 1, dominance = None, mask_t = "o", mask_d = 2, kernel_t = Config.config["kernel"], debug = None):
+        assert self.D == data.shape[1]
+        if debug is None:
+            debug = self.debug
+
+        # Make copy of inference model and data (for quantization)
+        og_classes = self.preprocess_classes(self.classes, kernel_t)
+        #data_cp = self.preprocess_data(data, kernel_t)
+
+        # fit
+        correct = 0
+        correct_1 = 0
+        correct_2 = 0
+        correct_r = 0
+
+        wrong_1 = 0
+        wrong_2 = 0
+        wrong_3 = 0 # When the answer is not in top 2
+
+        matrix = np.zeros((self.nClasses, self.nClasses))
+        net_matrix = np.zeros((self.nClasses,self.nClasses))
+        count = 0
+
+        masks = self.mask_selector(mask_t, mask_d)
+        if masks is None:
+            print("OOF NO MASK OF THE TYPE FOUND")
+            return None
+
+        for i in range(data.shape[0]):
+            answer = label[i]
+            vals = batch_kernel(og_classes, data[i], kernel_t)
+            order = list(reversed(np.argsort(vals)))
+            fst = order[0]
+            snd = order[1]
+            guess = fst
+            the_mask = None
+            fst_sc = vals[fst]
+            snd_sc = vals[snd]
+            ratio = fst_sc/snd_sc
+            if dominance is not None and ratio >= dominance:
+                guess = fst
+            elif not np.isnan(np.sum(masks[fst][snd])) and not np.isnan(np.sum(masks[snd][fst])):
+                if mask_d == 2:
+                    the_mask = masks[fst][snd] - masks[snd][fst]
+                    #if np.sum(the_mask) == 0:
+                    #    print("Found untrained mask (%d, %d) during testing" % (fst, snd))
+                    #    print("Their submasks starts with:")
+                    #    print(masks[fst][snd][0:10], masks[snd][fst][0:10])
+                    #    print("Selecting fst by default")
+                    #    continue
+                    fst_sc = np.dot((data[i] * the_mask), self.classes[fst])
+                    snd_sc = -np.dot((data[i] * the_mask), self.classes[snd])
+                    diff = (fst_sc - snd_sc) * self.decider[fst][snd]
+                    if diff < 0: # Also include cases where decider == 0
+                        guess = snd
+                    #score = np.dot(data[i]*(self.classes[fst]-self.classes[snd]),(masks[fst][snd] - masks[snd][fst]))
+                    #if score < 0:
+                    #    guess = snd
+                elif mask_d == 1:
+                    the_mask = masks[fst]
+                    fst_sc = np.dot((data[i] * the_mask), self.classes[fst])
+                    snd_sc = np.dot((data[i] * the_mask), self.classes[snd])
+                    ratio = fst_sc / snd_sc
+                    if 0 > ratio or ratio > threshold:
+                        guess = snd
+                else:
+                    print("Error in determining mask dimensions")
+                    return
+
+                # Handle matrices
+                matrix[fst][snd] += 1
+                if guess == answer:
+                    net_matrix[fst][snd] += 1
+                else:
+                    net_matrix[fst][snd] -= 1
+
+
+            if answer == guess:
+                correct += 1
+                if guess == snd:
+                    correct_r += 1
+                    if debug:
+                        print("Correctly selected the second:")
+                        print(fst, snd)
+                        #print(the_mask)
+                        print(ratio)
+
+            if fst == answer:
+                correct_1 += 1
+                if guess != fst:
+                    wrong_1 += 1
+                    if debug:
+                        print("Wrongly selected the second:")
+                        print(fst, snd)
+                        #print(the_mask)
+                        print(ratio)
+            elif snd == answer:
+                correct_2 += 1
+                if guess != snd:
+                    wrong_2 += 1
+                    if debug:
+                        print("Wrongly selected the first:")
+                        print(fst, snd)
+                        print(ratio)
+            else:
+                wrong_3 += 1
+            count += 1
+        return correct, correct_1, correct_2, correct_r, wrong_1, wrong_2, wrong_3, count, matrix, net_matrix
+
+
 
     def analyze_topn(self, data, label, dominance = None, mask_t="o", mask_d = 2, kernel_t = Config.config["kernel"]):
         assert self.D == data.shape[1]
@@ -659,8 +845,6 @@ class HD_classifier:
         if masks is None:
             print("WTF no mask type found")
 
-        fst_rate = []
-        snd_rate = []
         fst_scs = []
         snd_scs = []
 
@@ -682,6 +866,9 @@ class HD_classifier:
                     the_mask = masks[fst][snd] - masks[snd][fst]
                 else:
                     the_mask = masks[fst]
+                if np.count_nonzero(the_mask) == 0:
+                    print("Encounter unforseen mask:", fst, snd)
+                    continue
                 # Check 0
                 #if np.sum(the_mask) == 0:
                 #    print("Found untrained mask (%d, %d) of ratio %f"%( fst, snd, ratio))
@@ -689,31 +876,23 @@ class HD_classifier:
                 #    print(masks[fst][snd][0:10], masks[snd][fst][0:10])
                 #    continue
                 fst_sc = np.dot((data[i] * the_mask), self.classes[fst])
-                snd_sc = np.dot((data[i] * the_mask), self.classes[snd])
-                #print(fst_sc, snd_sc)
-                score = fst_sc - snd_sc
-                ratio = fst_sc/snd_sc
-                #if snd_sc < 0 and  fst_sc > 0:
-                #    ratio = 100000000000000 # Absolute
-                #score = np.dot(data[i] * (self.classes[fst] - self.classes[snd]), (masks[fst][snd] - masks[snd][fst]))
+                snd_sc = -np.dot((data[i] * the_mask), self.classes[snd])
                 if answer == fst:
-                    fst_rate.append(ratio)
-                    fst_scs.append(score)
+                    fst_scs.append((fst_sc, snd_sc, i, fst, snd))
                 else:
-                    snd_rate.append(ratio)
-                    snd_scs.append(score)
+                    snd_scs.append((fst_sc, snd_sc, i, fst, snd))
 
-        return np.asarray(fst_rate), np.asarray(snd_rate), np.asarray(fst_scs), np.asarray(snd_scs)
+        return np.asarray(fst_scs), np.asarray(snd_scs)
 
-    def analyze(self, data, label, kernel_t=Config.config["kernel"]):
+    def analyze(self, data, label, dominance = None, kernel_t=Config.config["kernel"]):
         assert self.D == data.shape[1]
 
         # Make copy of inference model and data (for quantization)
         og_classes = self.preprocess_classes(self.classes, kernel_t)
         # data_cp = self.preprocess_data(data, kernel_t)
 
-        fst_rate = []
-        snd_rate = []
+        fst_scs = []
+        snd_scs = []
 
         for i in range(data.shape[0]):
             answer = label[i]
@@ -723,11 +902,12 @@ class HD_classifier:
             snd = order[1]
             fst_sc = vals[fst]
             snd_sc = vals[snd]
-            ratio = fst_sc / snd_sc
+            if dominance is not None and dominance < fst_sc/snd_sc:
+                continue
             if answer == fst:
-                fst_rate.append(ratio)
+                fst_scs.append((fst_sc, snd_sc, i, fst, snd))
             else:
-                snd_rate.append(ratio)
-        return np.asarray(fst_rate), np.asarray(snd_rate)
+                snd_scs.append((fst_sc, snd_sc, i, fst, snd))
+        return np.asarray(fst_scs), np.asarray(snd_scs)
 
 
