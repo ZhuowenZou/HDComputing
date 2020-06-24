@@ -153,6 +153,8 @@ class HD_classifier:
             self.classes[answer] += rate * sample
         elif update_type == Update_T.HALF:
             self.classes[answer] += rate * weight
+        elif update_type == Update_T.RHALF:
+            self.classes[guess] -= rate * weight
         else:
             raise Exception("unrecognized Update_T")
 
@@ -300,6 +302,83 @@ class HD_classifier:
             count += 1
         self.first_fit = False
         return correct / count
+
+
+    def fit_topn(self, data, label, n = 2, dominance = 1, param = Config.config):
+
+        assert self.D == data.shape[1]
+
+        # Default parameter
+        for option in self.options:
+            if option not in param:
+                param[option] = config[option]
+        if self.first_fit:
+            sys.stderr.write("Fitting with configuration: %s \n" % str([(k, param[k]) for k in self.options]))
+
+        # Actual fitting
+
+        # handling dropout
+        mask = np.ones(self.D)
+        if param["dropout"]:
+            for option in self.options_dropout:
+                if option not in param:
+                    param[option] = config[option]
+            # Mask for dropout
+            for i in np.random.choice(self.D, int(self.D * (param["drop_rate"])), replace=False):
+                mask[i] = 0
+
+        # fit
+        r = list(range(data.shape[0]))
+        random.shuffle(r)
+        correct = 0
+        count = 0
+        lr = param["lr"]
+        for i in r:
+            sample = data[i] * mask
+            scale = np.linalg.norm(sample) # For cos
+
+            assert data[i].shape == mask.shape
+
+            answer = label[i]
+            vals = batch_kernel(self.classes, sample, param["kernel"])
+            order = list(reversed(np.argsort(vals)))
+            guesses = order[:n]
+
+            if guesses[0] != answer:
+                #self.update(data[i], answer, guesses[0], param["lr"]/scale , mask)
+                self.classes[answer] += lr * (1-vals[answer]) * data[i]
+                self.classes[guesses[0]] -= lr * (vals[guesses[0]]) * data[i]
+                #if answer == guesses[1]:
+                    #counter = 0
+                    #while kernel(self.classes[answer], sample, param["kernel"]) <= kernel(self.classes[guesses[0]], sample, param["kernel"]):
+                    #    print("Values:", kernel(self.classes[answer], sample, param["kernel"]), kernel(self.classes[guesses[0]], sample, param["kernel"]))
+                    #    print(scale)
+                        #self.classes[guesses[0]] -= data[i]
+                        #self.classes[answer] += data[i]
+                 #   self.update(data[i], answer, guesses[0], param["lr"] * abs(vals[guesses[0]])/scale, mask,
+                 #                   Update_T.RHALF)
+                    #    counter += 1
+                    #if counter >= 1:
+                    #    print("Second choiced %d detected, learning:"%(i), end = " ")
+                    #    print(counter, "Times")
+
+            else:
+                correct += 1
+                if vals[guesses[0]] <= dominance * vals[guesses[1]] :
+                    self.classes[guesses[1]] -= lr * (vals[guesses[1]]) * data[i]
+                #if vals[guesses[1]] > 0:
+                    #print("Updating second choice with rate:", vals[guesses[1]]/scale)
+                    #print("Its first choice has:", vals[guesses[0]]/scale)
+                #    self.update(data[i], answer, guesses[1], param["lr"] * abs(vals[guesses[1]])/scale, mask, Update_T.RHALF)
+
+
+            count += 1
+        self.first_fit = False
+        return correct / count
+
+
+
+
 
     def fit_mask(self, data, label, param = Config.config):
 

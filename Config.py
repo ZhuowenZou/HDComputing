@@ -5,7 +5,7 @@ class Update_T(Enum):
   PARTIAL = 2
   RPARTIAL = 3
   HALF = 4
-
+  RHALF = 5
 # enum for random vector generator type
 class Generator_T(Enum):
   Vanilla = 1
@@ -40,12 +40,12 @@ DATA = {
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["es"][0],
-  "dataset"       : DATA["es"][1],   # directory and dataset
+  "directory"     : DATA["uc"][0],
+  "dataset"       : DATA["uc"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors
-  "D" : 500,
+  "D" : 2000,
   # Gaussian random vector generation
   "vector" : "Gaussian",  # Gaussian
   "mu" : 0,
