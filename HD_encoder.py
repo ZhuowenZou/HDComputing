@@ -46,14 +46,19 @@ class HD_encoder:
     # noise: default Gaussian noise
     def encodeData(self, data):
         start = time.time()
-        sys.stderr.write("Encoding data of shape %s\n"%str(data.shape))
+        #sys.stderr.write("Encoding data of shape %s\n"%str(data.shape))
         assert data.shape[1] == self.basis.shape[1]
         noises = []
         encoded = []
-        for i in tqdm_notebook(range(len(data)), desc='samples encoded'):
+        #for i in tqdm_notebook(range(len(data)), desc='samples encoded'):
+        for i in range(len(data)):
             encoded.append(self.encodeDatum(data[i]))
         end = time.time()
-        sys.stderr.write("Time spent: %d sec\n" % int(end - start))
+        #sys.stderr.write("Time spent: %d sec\n" % int(end - start))
         return np.asarray(encoded)
+
+    # Update basis of the HDE
+    def updateBasis(self, basis):
+        self.basis = basis
 
 

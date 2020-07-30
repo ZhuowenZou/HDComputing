@@ -143,19 +143,20 @@ class HD_basis:
         elif gen_type == Generator.Baklava:
             self.baklava()
         end = time.time()
-        sys.stderr.write('Encoding time: %s \n' % str(end - start))
+        #sys.stderr.write('Encoding time: %s \n' % str(end - start))
         if "checkpoints" in param and param["checkpoints"]:
             self.filename = saveBasis(self.basis, self.param)
 
     def vanilla(self):
 
-        sys.stderr.write("Generating vanilla HD basis of shape... ")
+        #sys.stderr.write("Generating vanilla HD basis of shape... ")
         self.basis = []
         #for i in range(param["D"]):
-        for _ in tqdm_notebook(range(self.param["D"]), desc='vectors'):
+        #for _ in tqdm_notebook(range(self.param["D"]), desc='vectors'):
+        for _ in range(self.param["D"]):
             self.basis.append(generate_vector(self.param["nFeatures"], self.param["vector"], self.param))
         self.basis = np.asarray(self.basis)
-        sys.stderr.write(str(self.basis.shape)+"\n")
+        #sys.stderr.write(str(self.basis.shape)+"\n")
 
 
     def baklava(self):
@@ -198,6 +199,14 @@ class HD_basis:
         self.basis = self.basis[:,:,0]
         #print("Reduced BASIS")
         #print(self.basis)
+
+    # Update basis vector for the specified indices according to self.param. None means all
+    # Currently only support Vanilla, though no one is stopping you from using it with Baklava
+    def updateBasis(self, toChange = None):
+        print("Updating basis......")# at the following indices: (None means changing everything)")
+        #print(toChange)
+        for i in toChange:
+            self.basis[i] = generate_vector(self.param["nFeatures"], self.param["vector"], self.param)
 
     def getBasis(self):
         return self.basis

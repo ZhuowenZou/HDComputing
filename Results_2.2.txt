@@ -1,0 +1,13 @@
+None:
+Max pre test acc: 	 67.900000 	
+Max test acc: 	 	 72.420000 	
+Max post test acc: 	 73.400000 	
+Max fin	 acc: 	 	 72.660000 	
+Max best acc: 	 	 73.140000 
+
+Weights:
+Max pre test acc: 	 68.660000 	
+Max test acc: 	 	 68.200000 	
+Max post test acc: 	 73.300000 	
+Max fin	 acc: 	 	 73.220000 	
+Max best acc: 	 	 73.700000 

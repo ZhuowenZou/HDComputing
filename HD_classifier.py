@@ -2,6 +2,7 @@ import Config
 import sys
 import random
 import numpy as np
+import sklearn
 from Config import config, Update_T
 
 
@@ -47,9 +48,13 @@ class HD_classifier:
         self.D = D
         self.nClasses = nClasses
         self.classes = np.zeros((nClasses, D))
+        self.counts = np.zeros(nClasses)
         # If first fit, print out complete configuration
         self.first_fit = True
         self.id = id
+        self.idx_weights = np.ones((D))
+        self.update_cnts = np.zeros((D))
+        self.mask = np.ones((D))
 
     def resetModel(self, basis = None, D = None, nClasses = None, id = None, reset = True):
         if basis is not None:
@@ -72,17 +77,26 @@ class HD_classifier:
 
     def update(self, weight, mask, guess, answer, rate, update_type=Update_T.FULL):
         sample = weight * mask
+        self.counts[guess] += 1
+        self.counts[answer] += 1
         if update_type == Update_T.FULL:
-            self.classes[guess]  -= rate * sample
-            self.classes[answer] += rate * sample
+            self.classes[guess]  -= rate * weight
+            self.classes[answer] += rate * weight
         elif update_type == Update_T.PARTIAL:
             self.classes[guess]  -= rate * sample
             self.classes[answer] += rate * weight
         elif update_type == Update_T.RPARTIAL:
             self.classes[guess]  -= rate * weight
             self.classes[answer] += rate * sample
+        elif update_type == Update_T.MASKED:
+            self.classes[guess]  -= rate * sample
+            self.classes[answer] += rate * sample
         elif update_type == Update_T.HALF:
             self.classes[answer] += rate * weight
+            self.counts[guess] -= 1
+        elif update_type == Update_T.WEIGHTED:
+            self.classes[guess]  -= rate * np.multiply(self.idx_weights, sample)
+            self.classes[answer] += rate * np.multiply(self.idx_weights, sample)
         else:
             raise Exception("unrecognized Update_T")
 
@@ -98,14 +112,16 @@ class HD_classifier:
         for option in self.options:
             if option not in param:
                 param[option] = config[option]
-        if self.first_fit:
-            sys.stderr.write("Fitting with configuration: %s \n" % str([(k,param[k]) for k in self.options]))
+        #if self.first_fit:
+        #    sys.stderr.write("Fitting with configuration: %s \n" % str([(k,param[k]) for k in self.options]))
 
         # Actual fitting
 
         # handling dropout
         mask = np.ones(self.D)
-        if param["dropout"]:
+        if param["masked"]:
+            mask = np.copy(self.mask)
+        elif param["dropout"]:
             for option in self.options_dropout:
                 if option not in param:
                     param[option] = config[option]
@@ -134,7 +150,7 @@ class HD_classifier:
             guess = np.argmax(vals)
             
             if guess != answer:
-                self.update(data[i], mask, guess, answer, param["lr"])
+                self.update(data[i], mask, guess, answer, param["lr"], param["update_type"])
             else:
                 correct += 1
             count += 1
@@ -158,7 +174,6 @@ class HD_classifier:
             prediction.append(guess)
         return prediction
 
-    # TODO: reduce this to using predict??
     def test(self, data, label):
 
         assert self.D == data.shape[1]
@@ -181,4 +196,40 @@ class HD_classifier:
                 correct += 1
             count += 1
         return correct / count
+
+    # given current classifier value, return:
+    # Variance of each dimension across the classes, and
+    # The indices in the order from least variance to greatest
+    def evaluateBasis(self):
+        #normed_classes = self.classes/(np.sqrt(np.asarray([self.counts])).T)
+        #variances = np.var(self.classes, axis = 0)
+        normed_classes = sklearn.preprocessing.normalize(np.asarray(self.classes), norm='l2')
+        variances = np.var(normed_classes, axis = 0) 
+        assert len(variances) == self.D
+        order = np.argsort(variances)
+        return variances, order
+
+    # Some basis are to be update
+    def updateClasses(self, toChange = None):
+        if toChange is None:
+            #self.classes = np.zeros((self.nClasses, self.D))
+            self.classes = sklearn.preprocessing.normalize(np.asarray(self.classes), norm='l2', axis = 0)
+            self.counts = np.ones(self.nClasses) # An averaged vector is already in
+        else:
+            for i in toChange:
+                self.classes[:,i] = np.zeros(self.nClasses)
+    
+    #Update update rates
+    def updateWeights(self, toChange):
+        #new_weight = max(self.idx_weights) + 1
+        self.idx_weights = self.idx_weights/2
+        for i in toChange:
+            #self.idx_weights[i] = new_weight
+            #self.idx_weights[i] += 1
+            self.idx_weights[i] = 1
+            self.update_cnts[i] += 1
+
+    def updateMask(self, toChange):
+        self.mask = np.ones((self.D))
+        np.put(self.mask, toChange, 0, mode = "raise")
 

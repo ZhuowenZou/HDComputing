@@ -4,7 +4,9 @@ class Update_T(Enum):
   FULL = 1
   PARTIAL = 2
   RPARTIAL = 3
-  HALF = 4
+  MASKED = 4
+  HALF = 5
+  WEIGHTED = 6
 
 # enum for random vector generator type
 class Generator(Enum):
@@ -16,21 +18,25 @@ class Generator(Enum):
 # DATA set: its dir and filename.
 DATA = {
   "is": ("isolet", "isolet"),
-  "sh": ("smart_home", "smart_home_split"),
+  "shs": ("smart_home", "smart_home_split"),
+  "sh": ("smart_home", "smart_home"),
   "es": ("ExtraSensory", "pos"),
   "mn": ("MNIST", "MNIST"),
   "uc": ("UCIHAR", "UCIHAR"),
-  "vt": ("votes", "votes")
+  "vt": ("votes", "votes"),
+  "fc": ("face", "face"),
+  "sp": ("serverperf", "perf"),
+  "spow": ("serverpower", "power")
 }
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["mn"][0],
-  "dataset"       : DATA["mn"][1],   # directory and dataset
+  "directory"     : DATA["shs"][0],
+  "dataset"       : DATA["shs"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors
-  "D" : 5000,
+  "D" : 200,
   # Gaussian random vector generation
   "vector" : "Gaussian",  # Gaussian
   "mu" : 0,
@@ -39,7 +45,8 @@ config = {
   "binarize" : 0,
   # Learning rate
   # if binarize make lr 1
-  "lr" : 0.037, #"lr" : 1,
+  #"lr" : 0.037, #"lr" : 1,
+  "lr": 0.037,
   # Obsolete: whether the vector should be sparse, and how sparse
   "sparse" : 0,
   "s" : 0.1,
@@ -83,6 +90,7 @@ config = {
   # default rate
   "dropout_rate": 0,
   "update_type": Update_T.FULL,
+  "masked": False,  # For masked fitting --- coupled with weighted update
 
   ################## Train / Test iterations ##########
   # number of trials to run per experiment
@@ -90,5 +98,5 @@ config = {
   # number of times to run per encoding
   "iter_per_encoding": 5,
   # iterations per training (number of epochs)
-  "epochs": 100,
+  "epochs": 250,
 }

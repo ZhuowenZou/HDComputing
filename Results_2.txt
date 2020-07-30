@@ -1,0 +1,52 @@
+Weighting method: (smart home split)
+
+None: 
+
+Adaptive:
+Max pre test acc: 	 89.300000 	
+Max test acc: 	 	 88.040000 	
+Max post test acc: 	 95.200000 	
+Max fin	 acc: 	 	 95.460000 	
+Max best acc: 	 	 95.340000 
+
+
+Naive setter: set weights to last update time
+
+Adaptive:
+
+Max pre test acc: 	 89.800000 	
+Max test acc: 	 	 89.580000 	
+Max post test acc: 	 95.160000 	
+Max fin	 acc: 	 	 95.160000 
+
+Naive counter: +1 for updated weights
+
+Adaptive:
+
+Max pre test acc: 	 87.480000 	
+Max test acc: 	 	 88.960000 	
+Max post test acc: 	 94.200000 	
+Max fin	 acc: 	 	 94.520000 	
+Max best acc: 	 	 94.420000 
+
+Max pre test acc: 	 88.520000 	
+Max test acc: 	 	 88.600000 	
+Max post test acc: 	 95.080000 	
+Max fin	 acc: 	 	 95.060000 	
+Max best acc: 	 	 95.100000 
+
+Exponential diminish: every update, all weights /2 but the updated ones reset to 1
+
+Adaptive:
+
+Max pre test acc: 	 88.540000 	
+Max test acc: 	 	 87.500000 	
+Max post test acc: 	 94.040000 	
+Max fin	 acc: 	 	 94.100000 
+
+Max pre test acc: 	 90.040000 	
+Max test acc: 	 	 86.260000 	
+Max post test acc: 	 94.440000 	
+Max fin	 acc: 	 	 94.440000 	
+Max best acc: 	 	 94.500000 
+

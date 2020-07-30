@@ -1,0 +1,21 @@
+Non-binary:
+1. binarize all
+2. S*(C1-C2) 
+
+log allowed
+
+
+Binary (or multibit quant.):
+{(-1, 1)}
+S (category 1)
+C1 C2
+S*C1 - S*C2 = (.... -2, 0, 2...) 
+
+1. Combining mask of the same class (pair)
+S1, .. S100
+Majority
+
+2. Combining class-class masks to one class. 
+Majority
+
+(Weighted majority: the trained mask has weight from step 1)
