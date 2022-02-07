@@ -35,13 +35,17 @@ DATA = {
   "es": ("ExtraSensory", "pos"),
   "mn": ("MNIST", "MNIST"),
   "uc": ("UCIHAR", "UCIHAR"),
-  "vt": ("votes", "votes")
+  "vt": ("votes", "votes"),
+  "iotm": ("IoT", "IoTm"),
+  "iotg": ("IoT", "IoTg"),
+  "fc": ("face", "face"),
+  "cd": ("cardiotocography", "cardiotocography")
 }
 
 config = {
   "data_location" : "../dataset/",     # Location for all the data
-  "directory"     : DATA["mn"][0],
-  "dataset"       : DATA["mn"][1],   # directory and dataset
+  "directory"     : DATA["uc"][0],
+  "dataset"       : DATA["uc"][1],   # directory and dataset
 
   ################ HD general #####################
   # Dimension of HD vectors
@@ -54,15 +58,15 @@ config = {
   "binarize" : 0,
   # Learning rate
   # if binarize make lr 1
-  "lr" : 0.037,
-  #"lr" : 1,
+  #"lr" : 0.037,
+  "lr" : 1,
   # Obsolete: whether the vector should be sparse, and how sparse
   "sparse" : 0,
   "s" : 0.1,
   # binary model
   "binaryModel" : 0,
   "checkpoints": False, # whether to have checkpoint files.
-  "kernel": Kernel_T.DOT,
+  "kernel": Kernel_T.COS,
 
   ################### Baklava #######################
   "width": None,
@@ -107,5 +111,5 @@ config = {
   # number of times to run per encoding
   "iter_per_encoding": 5,
   # iterations per training (number of epochs)
-  "epochs": 80,
+  "epochs": 40,
 }

@@ -107,7 +107,7 @@ class HD_classifier:
         self.D = D
         self.nClasses = nClasses
         #self.classes = np.zeros((nClasses, D))
-        self.classes = np.random.normal(0, 1, (nClasses, D))
+        self.classes = np.random.normal(0, 0.01, (nClasses, D))
         # If first fit, print out complete configuration
         self.first_fit = True
         self.id = id
@@ -208,7 +208,7 @@ class HD_classifier:
         # Make copy of inference model and data (for quantization)
         kernel_t = param["kernel"]
         og_classes = self.preprocess_classes(self.classes, kernel_t)
-        #data_cp = self.preprocess_data(data, kernel_t)
+        data_cp = self.preprocess_data(data, kernel_t)
 
         # fit
         r = list(range(data.shape[0]))
@@ -218,7 +218,7 @@ class HD_classifier:
         for i in r:
             assert data[i].shape == mask.shape
 
-            sample = data[i] * mask
+            sample = data_cp[i] * mask
             answer = label[i]
             # maxVal = -1
             # guess = -1
@@ -337,28 +337,95 @@ class HD_classifier:
         # Make copy of inference model and data (for quantization)
         kernel_t = param["kernel"]
         og_classes = self.preprocess_classes(self.classes, kernel_t)
-        #data_cp = self.preprocess_data(data, kernel_t)
+        data_cp = self.preprocess_data(data, kernel_t)
 
         for i in range(data.shape[0]):
-            vals = batch_kernel(og_classes, data[i])
+            vals = batch_kernel(og_classes, data_cp[i], kernel_t)
             guess = np.argmax(vals)
             prediction.append(guess)
         return prediction
 
-    def test(self, data, label, kernel_t = Kernel_T.DOT):
+    def test(self, data, label, kernel_t = Config.config["kernel"]):
 
         assert self.D == data.shape[1]
 
         # Make copy of inference model and data (for quantization)
         og_classes = self.preprocess_classes(self.classes, kernel_t)
-        #data_cp = self.preprocess_data(data, kernel_t)
+        data_cp = self.preprocess_data(data, kernel_t)
 
         # fit
         correct = 0
         count = 0
         for i in range(data.shape[0]):
             answer = label[i]
-            vals = batch_kernel(og_classes, data[i])
+            vals = batch_kernel(og_classes, data_cp[i], kernel_t)
+            guess = np.argmax(vals)
+            if guess == answer:
+                correct += 1
+            count += 1
+        return correct / count
+
+    def test(self, data, label, kernel_t = Config.config["kernel"]):
+
+        assert self.D == data.shape[1]
+
+        # Make copy of inference model and data (for quantization)
+        og_classes = self.preprocess_classes(self.classes, kernel_t)
+        data_cp = self.preprocess_data(data, kernel_t)
+
+        # fit
+        correct = 0
+        count = 0
+        for i in range(data.shape[0]):
+            answer = label[i]
+            vals = batch_kernel(og_classes, data_cp[i], kernel_t)
+            guess = np.argmax(vals)
+            if guess == answer:
+                correct += 1
+            count += 1
+        return correct / count
+
+    def test_with_error(self, data, label, err_rate, err_lvl, kernel_t = Config.config["kernel"]):
+
+        def gen_err(classes, err_rate, err_lvl, kernel_t):
+            amountFlip = int(self.D * err_rate)
+            new_classes = []
+            for curr_class in classes:
+                print("Class given:\n", curr_class)
+
+                indices = [random.randint(0, self.D - 1) for _ in range(amountFlip)]
+                signes = [2 * random.randint(0, 1) - 1 for _ in range(amountFlip)]
+                for i in range(amountFlip):
+                    ub = 0 # Upper bound
+                    if kernel_t == Kernel_T.BT3:
+                        ub = 7
+                    elif kernel_t == Kernel_T.BT4:
+                        ub = 15
+                    else:
+                        print("Kernel_T in error testing not supported!")
+                        return None
+                    temp = curr_class[indices[i]] + signes[i] * err_lvl
+                    #temp = curr_class[indices[i]] + err_lvl
+                    curr_class[indices[i]] = min(ub, max(0, temp)) # Upper Lower bound
+                print("Class returned:\n", curr_class)
+                new_classes.append(curr_class)
+            return np.asarray(new_classes)
+
+        assert self.D == data.shape[1]
+
+        # Make copy of inference model and data (for quantization)
+        og_classes = self.preprocess_classes(self.classes, kernel_t)
+        #print("From: ", og_classes[0])
+        og_classes = gen_err(og_classes, err_rate, err_lvl, kernel_t)
+        #print("To  : ", og_classes[0])
+        data_cp = self.preprocess_data(data, kernel_t)
+
+        # fit
+        correct = 0
+        count = 0
+        for i in range(data.shape[0]):
+            answer = label[i]
+            vals = batch_kernel(og_classes, data_cp[i], kernel_t)
             guess = np.argmax(vals)
             if guess == answer:
                 correct += 1

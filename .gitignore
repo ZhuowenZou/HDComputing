@@ -1,3 +1,5 @@
+*.txt
+
 # Project specific
 dataInfo
 *.xlsx
